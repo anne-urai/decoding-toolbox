@@ -22,7 +22,7 @@ function gamma = shrinkageGamma(X, memEff, feedback)
 
 if nargin < 2
     memEff = 0;
-
+    
 end
 if nargin < 3
     feedback = 'yes';
@@ -34,53 +34,55 @@ numN = size(X, 2);
 if ~memEff
     m = mean(X, 2);
     S = cov(X');
-
+    
     nu = trace(S)/numF;
-
+    
     z = zeros(numF, numF, numN);
     for n = 1:numN
         z(:, :, n) = (X(:, n) - m)*(X(:, n) - m)';
     end
-
+    
     gamma = ...
         (numN/((numN-1)^2)) * ...
         sum(sum(var(z, [], 3))) / ...
         sum(sum((S - nu*eye(numF)).^2)) ...
-    ;
+        ;
 else
     % Demean X
+    disp('demeaning...');
     X = X - mean(X, 2)*ones(1, numN);
-
     sumVarDiag = 0;
-
+    
     % Do diagonal elements first to determine nu
+    disp('diagonal elements...');
     diagS = zeros(numF, 1);
     for iF = 1:numF
         s = X(iF, :).^2;
-
+        
         diagS(iF) = sum(s)/(numN-1);
         s = s - mean(s);
         sumVarDiag = sumVarDiag + (s*s')/(numN-1);
     end
-
+    
     nu = mean(diagS);
-
+    
     diagS = diagS - nu;
     sumSdiag = diagS'*diagS;
-
+    
     % Do off-diagonal elements, but only one triangle
+    disp('off-diagonal elements...');
     sumS = 0;
     sumVar = 0;
-
+    
     tStart = tic;
     tCur = tStart;
     for iF1 = 2:numF
         for iF2 = 1:(iF1-1)
             s = X(iF1, :) .* X(iF2, :);
-
+            
             sumS = sumS + (sum(s)/(numN-1)).^2;
             s = s - mean(s);
-            sumVar = sumVar + (s*s')/(numN-1); 
+            sumVar = sumVar + (s*s')/(numN-1);
             
             if (toc(tCur) > 2) && strcmp(feedback, 'yes')
                 pDone = (((iF1-2)*(iF1-1)/2) + iF2) / ((numF-1)*numF/2);
@@ -91,17 +93,8 @@ else
     end
     sumS = sumS*2 + sumSdiag;
     sumVar = sumVar*2 + sumVarDiag;
-
+    
     gamma = (numN/((numN-1)^2))*sumVar/sumS;
 end
-            
-end            
-            
-            
-            
-           
-        
-        
-        
-        
-        
+
+end

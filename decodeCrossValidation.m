@@ -60,11 +60,10 @@ end
 
 %% Do first fold manually, to determine output size of decoder
 iFold = 1;
-
 tFold = tic;
 
-index_train = cell2mat(cfg0.folds((1:numFold) ~= iFold)');
-index_decode = cfg0.folds{iFold};
+index_train     = cell2mat(cfg0.folds((1:numFold) ~= iFold)');
+index_decode    = cfg0.folds{iFold};
 
 % Select training data
 Y_train = reshape(Y(:, index_train), [dimsY(1:(end-1)), length(index_train)]);
