@@ -22,7 +22,7 @@ function gamma = shrinkageGamma(X, memEff, feedback)
 
 if nargin < 2
     memEff = 0;
-    
+
 end
 if nargin < 3
     feedback = 'yes';
@@ -32,58 +32,67 @@ numF = size(X, 1);
 numN = size(X, 2);
 
 if ~memEff
+    disp('computing covariance matrix and trace...');
     m = mean(X, 2);
     S = cov(X');
-    
     nu = trace(S)/numF;
-    
+
+    disp('looping over elements of X...');
     z = zeros(numF, numF, numN);
+    tStart = tic;
     for n = 1:numN
         z(:, :, n) = (X(:, n) - m)*(X(:, n) - m)';
+
+        if (toc(tCur) > 2) && strcmp(feedback, 'yes'),
+            pDone = n/numN;
+            fprintf('%s - computing optimal gamma  %.2f%% - time remaining: %.2f s\n', ...
+            mfilename, pDone*100, toc(tStart) / pDone);
+        end
     end
-    
+    disp('computing gamma...');
     gamma = ...
         (numN/((numN-1)^2)) * ...
         sum(sum(var(z, [], 3))) / ...
-        sum(sum((S - nu*eye(numF)).^2)) ...
-        ;
+        sum(sum((S - nu*eye(numF)).^2));
+    toc(tStart);
+
 else
     % Demean X
     disp('demeaning...');
     X = X - mean(X, 2)*ones(1, numN);
     sumVarDiag = 0;
-    
+
     % Do diagonal elements first to determine nu
     disp('diagonal elements...');
     diagS = zeros(numF, 1);
     for iF = 1:numF
         s = X(iF, :).^2;
-        
+
         diagS(iF) = sum(s)/(numN-1);
         s = s - mean(s);
         sumVarDiag = sumVarDiag + (s*s')/(numN-1);
     end
-    
+
     nu = mean(diagS);
-    
+
     diagS = diagS - nu;
     sumSdiag = diagS'*diagS;
-    
+
     % Do off-diagonal elements, but only one triangle
     disp('off-diagonal elements...');
     sumS = 0;
     sumVar = 0;
-    
+
     tStart = tic;
     tCur = tStart;
     for iF1 = 2:numF
         for iF2 = 1:(iF1-1)
             s = X(iF1, :) .* X(iF2, :);
-            
+
             sumS = sumS + (sum(s)/(numN-1)).^2;
             s = s - mean(s);
             sumVar = sumVar + (s*s')/(numN-1);
-            
+
             if (toc(tCur) > 2) && strcmp(feedback, 'yes')
                 pDone = (((iF1-2)*(iF1-1)/2) + iF2) / ((numF-1)*numF/2);
                 fprintf('%s - finished calculating off-diagonal elements %.2f%% - time remaining: %.2f s\n', mfilename, pDone*100, toc(tStart) * ((1-pDone)/pDone))
@@ -93,7 +102,7 @@ else
     end
     sumS = sumS*2 + sumSdiag;
     sumVar = sumVar*2 + sumVarDiag;
-    
+
     gamma = (numN/((numN-1)^2))*sumVar/sumS;
 end
 
